@@ -1,49 +1,27 @@
-import logging
-import random
-import os
-import redis
-import socket
+import databases
+import sqlalchemy
+# SQLAlchemy specific code, as with any other app
+# DATABASE_URL = "sqlite:///./test.db"
+DATABASE_URL = "postgresql://user:password@postgresserver/db"
+
+database = databases.Database(DATABASE_URL)
+
+metadata = sqlalchemy.MetaData()
+
+notes = sqlalchemy.Table(
+    "notes",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("Name", sqlalchemy.String),
+    sqlalchemy.Column("Breed", sqlalchemy.String),
+    sqlalchemy.Column("Location_Of_Origin", sqlalchemy.String),
+    sqlalchemy.Column("Coat_Length", sqlalchemy.Float),
+    sqlalchemy.Column("Body_Type", sqlalchemy.String),
+    sqlalchemy.Column("Pattern", sqlalchemy.String),
+)
 
 
-__all__ = ["logger", "init_db", "connect_db", "db"]
-
-
-def initLog():
-    log = logging.getLogger()    # root logger
-    log.setLevel(logging.DEBUG)
-    
-    # log to console 
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    
-    # create formatter
-    #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-    # add formatter to ch
-    ch.setFormatter(formatter)
-    
-    log.addHandler(ch)
-    return log
-
-logger = initLog()
-
-random.seed(os.urandom(128))
-
-db: redis.StrictRedis = None
-
-def connect_db():    
-    database = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
-    cname = "webingo_{}_{}".format(socket.gethostname(), os.getpid())
-    database.client_setname(cname)
-    
-    logger.info('connected to persistency db as {}'.format(cname))
-    return database
-
-def init_db():
-    global db
-    db = connect_db()
-
-def get_db():
-    global db
-    return db
+engine = sqlalchemy.create_engine(
+    DATABASE_URL, connect_args={"check_same_thread": False}
+)
+metadata.create_all(engine)
